@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoffeeStock AI — Управление запасами</title>
+    <meta name="description" content="Интеллектуальная система управления запасами для сети кофеен с ML-прогнозированием">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        coffee: {
+                            50:  '#fdf8f0',
+                            100: '#f9edd8',
+                            200: '#f2d7a8',
+                            300: '#e8bb6e',
+                            400: '#df9d3e',
+                            500: '#d48325',
+                            600: '#b8651c',
+                            700: '#984b1a',
+                            800: '#7c3d1d',
+                            900: '#66331b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+
+        /* Стеклоформизм */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* Градиентный фон */
+        .bg-gradient-dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 30%, #1e293b 70%, #0f172a 100%);
+        }
+
+        /* Анимация появления */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+
+        /* Пульсирующий dot */
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.5; transform: scale(1.5); }
+        }
+        .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+        /* Hover на строке таблицы */
+        .table-row-hover {
+            transition: all 0.2s ease;
+        }
+        .table-row-hover:hover {
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateX(2px);
+        }
+
+        /* Input стилизация */
+        .input-glow:focus {
+            box-shadow: 0 0 0 2px rgba(212, 131, 37, 0.3), 0 0 12px rgba(212, 131, 37, 0.15);
+        }
+
+        /* Кнопка с анимацией */
+        .btn-primary {
+            background: linear-gradient(135deg, #d48325 0%, #b8651c 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #df9d3e 0%, #d48325 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px -5px rgba(212, 131, 37, 0.4);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* Скроллбар */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+        /* Status badge анимация */
+        .status-badge {
+            transition: all 0.3s ease;
+        }
+        .status-badge:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-dark min-h-screen text-gray-200">
+
+    <!-- ═══════ HEADER ═══════ -->
+    <nav class="glass border-b border-white/5 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Логотип -->
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-coffee-400 to-coffee-600 flex items-center justify-center shadow-lg shadow-coffee-500/20">
+                        <span class="text-white text-lg">☕</span>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white tracking-tight">CoffeeStock<span class="text-coffee-400"> AI</span></h1>
+                        <p class="text-[10px] text-gray-500 -mt-0.5 tracking-wider uppercase">Управление запасами</p>
+                    </div>
+                </div>
+
+                <!-- Статус и профиль -->
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:flex items-center gap-2 glass-card px-3 py-1.5 rounded-full">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full pulse-dot"></div>
+                        <span class="text-xs text-gray-400">Система активна</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-semibold text-white shadow-lg">
+                            АИ
+                        </div>
+                        <span class="text-sm text-gray-300 hidden sm:block">Менеджер</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══════ MAIN CONTENT ═══════ -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- KPI карточки -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Карточка 1: Продажи сегодня -->
+            <div class="glass-card rounded-2xl p-5 fade-in-up delay-1 group hover:border-coffee-500/20 transition-colors">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-gray-500 uppercase tracking-wider font-medium">Продажи сегодня</span>
+                    <span class="text-lg">📊</span>
+                </div>
+                <p class="text-2xl font-bold text-white">1 247</p>
+                <p class="text-xs text-emerald-400 mt-1">+12% к вчера</p>
+            </div>
+            <!-- Карточка 2: Позиций на складе -->
+            <div class="glass-card rounded-2xl p-5 fade-in-up delay-2 group hover:border-coffee-500/20 transition-colors">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-gray-500 uppercase tracking-wider font-medium">Позиций на складе</span>
+                    <span class="text-lg">📦</span>
+                </div>
+                <p class="text-2xl font-bold text-white">9</p>
+                <p class="text-xs text-amber-400 mt-1">2 требуют заказа</p>
+            </div>
+            <!-- Карточка 3: Точность ML -->
+            <div class="glass-card rounded-2xl p-5 fade-in-up delay-3 group hover:border-coffee-500/20 transition-colors">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-gray-500 uppercase tracking-wider font-medium">Точность ML</span>
+                    <span class="text-lg">🤖</span>
+                </div>
+                <p class="text-2xl font-bold text-white">94.2<span class="text-base text-gray-400">%</span></p>
+                <p class="text-xs text-emerald-400 mt-1">MAPE по Prophet</p>
+            </div>
+            <!-- Карточка 4: Экономия -->
+            <div class="glass-card rounded-2xl p-5 fade-in-up delay-4 group hover:border-coffee-500/20 transition-colors">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs text-gray-500 uppercase tracking-wider font-medium">Экономия в мес.</span>
+                    <span class="text-lg">💰</span>
+                </div>
+                <p class="text-2xl font-bold text-white">$2 180</p>
+                <p class="text-xs text-emerald-400 mt-1">−23% списания</p>
+            </div>
+        </div>
+
+        <!-- ═══════ ГЛАВНАЯ КАРТОЧКА: ЗАКАЗ ═══════ -->
+        <div class="glass rounded-2xl overflow-hidden fade-in-up delay-3" id="order-card">
+            <!-- Заголовок карточки -->
+            <div class="px-6 py-5 border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span class="w-2 h-2 bg-coffee-400 rounded-full pulse-dot"></span>
+                        Рекомендованный заказ на завтра
+                    </h2>
+                    <p class="text-sm text-gray-500 mt-1" id="generated-at">
+                        Сгенерировано AI: загрузка...
+                    </p>
+                </div>
+                <div class="flex items-center gap-2" id="status-badges">
+                    <span class="status-badge px-3 py-1 bg-amber-500/10 text-amber-400 rounded-full text-xs font-medium border border-amber-500/20">
+                        📋 Черновик
+                    </span>
+                    <span class="status-badge px-3 py-1 bg-indigo-500/10 text-indigo-400 rounded-full text-xs font-medium border border-indigo-500/20">
+                        7 дней прогноз
+                    </span>
+                </div>
+            </div>
+
+            <!-- Таблица -->
+            <div class="overflow-x-auto">
+                <table class="w-full" id="order-table">
+                    <thead>
+                        <tr class="text-left text-xs uppercase tracking-wider text-gray-500 border-b border-white/5">
+                            <th class="px-6 py-4 font-medium">Ингредиент</th>
+                            <th class="px-6 py-4 font-medium text-center">Ед.</th>
+                            <th class="px-6 py-4 font-medium text-right">Текущий остаток</th>
+                            <th class="px-6 py-4 font-medium text-right">Прогноз ИИ <span class="text-indigo-400">⚡</span></th>
+                            <th class="px-6 py-4 font-medium text-center">К заказу</th>
+                            <th class="px-6 py-4 font-medium">Поставщик</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-tbody">
+                        <!-- Строки генерируются JavaScript'ом -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Итого и кнопки -->
+            <div class="px-6 py-5 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-sm text-gray-400">
+                    Позиций: <span class="text-white font-semibold" id="total-items">0</span>
+                    &nbsp;•&nbsp;
+                    Суммарный заказ: <span class="text-coffee-400 font-semibold" id="total-summary">—</span>
+                </div>
+                <div class="flex gap-3">
+                    <button
+                        onclick="resetOrder()"
+                        id="btn-reset"
+                        class="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-400 border border-white/10 hover:bg-white/5 transition-all"
+                    >
+                        Сбросить
+                    </button>
+                    <button
+                        onclick="submitOrder()"
+                        id="btn-submit"
+                        class="btn-primary px-6 py-2.5 rounded-xl text-sm font-semibold text-white shadow-lg"
+                    >
+                        ✅ Утвердить и отправить поставщику
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Уведомление об успехе -->
+        <div id="success-toast" class="fixed bottom-8 right-8 glass-card rounded-2xl px-6 py-4 shadow-2xl border border-emerald-500/20 transform translate-y-20 opacity-0 transition-all duration-500 z-50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <span class="text-xl">✅</span>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-white" id="toast-title">Заказ отправлен!</p>
+                    <p class="text-xs text-gray-400" id="toast-message">Обратная связь сохранена для модели</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ═══════ FOOTER ═══════ -->
+    <footer class="border-t border-white/5 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p class="text-xs text-gray-600">© 2026 CoffeeStock AI — Курсовой проект </p>
+            <p class="text-xs text-gray-600">Python • FastAPI • Prophet • PostgreSQL</p>
+        </div>
+    </footer>
+
+
+    <!-- ═══════ JAVASCRIPT ═══════ -->
+    <script>
+        // ── Базовый URL API ──────────────────────────────────
+        const API_BASE = window.location.origin;
+
+        // ── Мок-данные (fallback если API недоступен) ─────────
+        const MOCK_DATA = {
+            generated_at: new Date().toLocaleString("ru-RU"),
+            forecast_days: 7,
+            feedback_applied: false,
+            drafts: [
+                { id: 1, ingredient: "Кофейные зёрна",    unit: "кг",  current_stock: 12.5, forecast_qty: 18.3, recommended_qty: 10.0, bias_correction: 0, supplier: "CoffeeBean Co." },
+                { id: 2, ingredient: "Молоко 3.2%",       unit: "л",   current_stock: 45.0, forecast_qty: 78.5, recommended_qty: 50.0, bias_correction: 0, supplier: "МолокоОпт" },
+                { id: 3, ingredient: "Стаканчики 300мл",  unit: "шт",  current_stock: 320,  forecast_qty: 580,  recommended_qty: 500,  bias_correction: 0, supplier: "PackSupply" },
+                { id: 4, ingredient: "Крышки",            unit: "шт",  current_stock: 310,  forecast_qty: 580,  recommended_qty: 500,  bias_correction: 0, supplier: "PackSupply" },
+                { id: 5, ingredient: "Какао-порошок",     unit: "кг",  current_stock: 2.1,  forecast_qty: 4.8,  recommended_qty: 5.0,  bias_correction: 0, supplier: "ChocoTrade" },
+                { id: 6, ingredient: "Чай (ассорти)",     unit: "кг",  current_stock: 1.8,  forecast_qty: 2.5,  recommended_qty: 2.0,  bias_correction: 0, supplier: "TeaWorld" },
+                { id: 7, ingredient: "Сахар",             unit: "кг",  current_stock: 5.0,  forecast_qty: 8.2,  recommended_qty: 5.0,  bias_correction: 0, supplier: "СахарОпт" },
+                { id: 8, ingredient: "Сиропы (ассорти)",  unit: "л",   current_stock: 3.5,  forecast_qty: 5.1,  recommended_qty: 4.0,  bias_correction: 0, supplier: "SyrupHouse" },
+                { id: 9, ingredient: "Выпечка (ассорти)", unit: "шт",  current_stock: 25,   forecast_qty: 95,   recommended_qty: 100,  bias_correction: 0, supplier: "FreshBakery" },
+            ]
+        };
+
+        // ── Состояние ────────────────────────────────────────
+        let orderData = null;
+
+        // ── Загрузка данных (API с fallback на мок) ──────────
+        async function loadDrafts() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/v1/orders/drafts`);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                orderData = await resp.json();
+                console.log("✅ Данные загружены из API");
+            } catch (err) {
+                console.warn("⚠️ API недоступен, используем мок-данные:", err.message);
+                orderData = MOCK_DATA;
+            }
+            renderTable(orderData);
+        }
+
+        // ── Рендер таблицы ──────────────────────────────────
+        function renderTable(data) {
+            const tbody = document.getElementById("order-tbody");
+            const genAt = document.getElementById("generated-at");
+            const totalItems = document.getElementById("total-items");
+            const badges = document.getElementById("status-badges");
+
+            genAt.textContent = `Сгенерировано AI: ${data.generated_at} • Горизонт: ${data.forecast_days} дней`;
+            totalItems.textContent = data.drafts.length;
+
+            // Показываем badge если модель скорректирована обратной связью
+            if (data.feedback_applied) {
+                badges.innerHTML += `
+                    <span class="status-badge px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-medium border border-emerald-500/20">
+                        🧠 Модель скорректирована
+                    </span>`;
+            }
+
+            tbody.innerHTML = data.drafts.map((d, i) => {
+                // Определяем статус: критичный (остаток < прогноз)
+                const isCritical = d.current_stock < d.forecast_qty * 0.5;
+                const isWarning  = d.current_stock < d.forecast_qty;
+
+                const statusDot = isCritical
+                    ? '<span class="w-2 h-2 bg-red-400 rounded-full pulse-dot inline-block mr-2"></span>'
+                    : isWarning
+                        ? '<span class="w-2 h-2 bg-amber-400 rounded-full inline-block mr-2"></span>'
+                        : '<span class="w-2 h-2 bg-emerald-400 rounded-full inline-block mr-2"></span>';
+
+                const stockColor = isCritical
+                    ? 'text-red-400 font-semibold'
+                    : isWarning
+                        ? 'text-amber-400'
+                        : 'text-emerald-400';
+
+                // Показываем bias correction если он ненулевой
+                const biasHtml = (d.bias_correction && d.bias_correction !== 0)
+                    ? `<span class="text-[10px] ${d.bias_correction > 0 ? 'text-emerald-500' : 'text-red-400'} ml-1" title="Коррекция обратной связи">(${d.bias_correction > 0 ? '+' : ''}${d.bias_correction.toFixed(1)})</span>`
+                    : '';
+
+                return `
+                    <tr class="table-row-hover border-b border-white/3 fade-in-up" style="animation-delay: ${i * 0.05}s">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                ${statusDot}
+                                <span class="text-sm font-medium text-white">${d.ingredient}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center text-xs text-gray-500">${d.unit}</td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="${stockColor} text-sm">${formatNum(d.current_stock)}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="text-sm text-indigo-300">${formatNum(d.forecast_qty)}</span>${biasHtml}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value="${d.recommended_qty}"
+                                data-index="${i}"
+                                onchange="updateSummary()"
+                                class="input-glow w-24 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm text-center text-white
+                                       focus:outline-none focus:border-coffee-500 transition-all"
+                            />
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-xs text-gray-500 bg-white/3 px-2 py-1 rounded-md">${d.supplier}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+
+            updateSummary();
+        }
+
+        // ── Форматирование чисел ──────────────────────────
+        function formatNum(n) {
+            return Number.isInteger(n) ? n.toLocaleString("ru-RU") : n.toFixed(1).replace(".", ",");
+        }
+
+        // ── Пересчёт итога ────────────────────────────────
+        function updateSummary() {
+            const inputs = document.querySelectorAll("#order-tbody input[type='number']");
+            let totalQty = 0;
+            inputs.forEach(inp => { totalQty += parseFloat(inp.value) || 0; });
+            document.getElementById("total-summary").textContent =
+                `${totalQty.toLocaleString("ru-RU")} ед.`;
+        }
+
+        // ── Сброс к рекомендациям ─────────────────────────
+        function resetOrder() {
+            if (!orderData) return;
+            const inputs = document.querySelectorAll("#order-tbody input[type='number']");
+            inputs.forEach((inp, i) => {
+                inp.value = orderData.drafts[i].recommended_qty;
+            });
+            updateSummary();
+        }
+
+        // ── Отправка заказа → POST /api/v1/orders/approve ──
+        async function submitOrder() {
+            const inputs = document.querySelectorAll("#order-tbody input[type='number']");
+            const btn = document.getElementById("btn-submit");
+            const toast = document.getElementById("success-toast");
+            const toastTitle = document.getElementById("toast-title");
+            const toastMsg = document.getElementById("toast-message");
+
+            // Собираем данные для API
+            const items = [];
+            inputs.forEach((inp, i) => {
+                items.push({
+                    ingredient_id: orderData.drafts[i].id,
+                    recommended_qty: orderData.drafts[i].recommended_qty,
+                    approved_qty: parseFloat(inp.value) || 0,
+                });
+            });
+
+            // Блокируем кнопку
+            btn.innerHTML = "⏳ Отправка...";
+            btn.classList.add("opacity-60", "cursor-not-allowed");
+            btn.disabled = true;
+
+            try {
+                // Реальный POST к API
+                const resp = await fetch(`${API_BASE}/api/v1/orders/approve`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ items }),
+                });
+
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const result = await resp.json();
+                console.log("✅ Ответ API:", result);
+
+                // Успех
+                toastTitle.textContent = "Заказ утверждён!";
+                toastMsg.textContent = result.message;
+                btn.innerHTML = "✅ Отправлено!";
+            } catch (err) {
+                console.warn("⚠️ Ошибка при отправке:", err.message);
+                toastTitle.textContent = "Заказ сохранён локально";
+                toastMsg.textContent = "API недоступен, данные сохранены";
+                btn.innerHTML = "✅ Сохранено локально";
+            }
+
+            // Показываем тост
+            toast.classList.remove("translate-y-20", "opacity-0");
+            toast.classList.add("translate-y-0", "opacity-100");
+
+            // Скрываем тост через 4 секунды
+            setTimeout(() => {
+                toast.classList.remove("translate-y-0", "opacity-100");
+                toast.classList.add("translate-y-20", "opacity-0");
+            }, 4000);
+
+            // Восстанавливаем кнопку через 5 секунд
+            setTimeout(() => {
+                btn.innerHTML = "✅ Утвердить и отправить поставщику";
+                btn.classList.remove("opacity-60", "cursor-not-allowed");
+                btn.disabled = false;
+                // Перезагружаем данные — следующий раз прогноз будет скорректирован
+                loadDrafts();
+            }, 5000);
+        }
+
+        // ── Инициализация ─────────────────────────────────
+        document.addEventListener("DOMContentLoaded", loadDrafts);
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,141 @@
+// ============================================================
+// CoffeeStock AI — ER-диаграмма (DBML)
+// Интеллектуальная система управления запасами кофейни
+// ============================================================
+
+Project CoffeeStockAI {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Система прогнозирования спроса и автоматического
+    формирования заявок поставщикам для сети кофеен.
+  '''
+}
+
+// ── Пользователи (менеджеры кофеен) ──────────────────────────
+Table users {
+  id            int       [pk, increment, note: 'Первичный ключ']
+  username      varchar   [unique, not null, note: 'Логин']
+  email         varchar   [unique, not null, note: 'Email']
+  hashed_password varchar [not null, note: 'Хеш пароля (bcrypt)']
+  full_name     varchar   [note: 'ФИО менеджера']
+  role          varchar   [not null, default: 'manager', note: 'Роль: admin / manager']
+  store_id      int       [note: 'Привязка к кофейне']
+  is_active     boolean   [default: true]
+  created_at    timestamp [default: `now()`]
+
+  Note: 'Менеджеры и администраторы системы'
+}
+
+// ── Готовые напитки / товары ──────────────────────────────────
+Table products {
+  id            int       [pk, increment]
+  product_type  varchar   [unique, not null, note: 'Тип: Latte, Hot chocolate и т.д.']
+  category      varchar   [not null, note: 'Категория: Coffee, Tea, Bakery...']
+  unit_price    decimal   [note: 'Средняя цена продажи']
+  is_active     boolean   [default: true]
+  created_at    timestamp [default: `now()`]
+
+  Note: 'Справочник готовых напитков и товаров из POS'
+}
+
+// ── Сырьё / Ингредиенты ──────────────────────────────────────
+Table ingredients {
+  id            int       [pk, increment]
+  name          varchar   [unique, not null, note: 'Название: milk, coffee_beans, cups...']
+  unit          varchar   [not null, note: 'Единица: ml, g, pcs']
+  min_stock     decimal   [default: 0, note: 'Минимальный остаток (порог заказа)']
+  current_stock decimal   [default: 0, note: 'Текущий остаток на складе']
+  supplier_name varchar   [note: 'Основной поставщик']
+  price_per_unit decimal  [note: 'Цена за единицу закупки']
+  created_at    timestamp [default: `now()`]
+
+  Note: 'Справочник сырья и расходных материалов'
+}
+
+// ── Рецептура / BOM (Bill of Materials) ──────────────────────
+Table recipe_bom {
+  id            int       [pk, increment]
+  product_id    int       [not null, ref: > products.id, note: 'FK → products']
+  ingredient_id int       [not null, ref: > ingredients.id, note: 'FK → ingredients']
+  quantity      decimal   [not null, note: 'Расход на 1 единицу продукта']
+
+  Note: 'Разузлование: сколько сырья тратится на один напиток'
+
+  indexes {
+    (product_id, ingredient_id) [unique, note: 'Один ингредиент на продукт — уникален']
+  }
+}
+
+// ── История продаж (данные с POS) ────────────────────────────
+Table sales_history {
+  id              int       [pk, increment]
+  transaction_id  int       [not null, note: 'ID чека из POS']
+  transaction_date date     [not null, note: 'Дата продажи']
+  transaction_time time     [note: 'Время продажи']
+  store_id        int       [not null, note: 'ID кофейни']
+  store_location  varchar   [note: 'Локация: Lower Manhattan и т.д.']
+  product_id      int       [ref: > products.id, note: 'FK → products']
+  quantity        int       [not null, default: 1, note: 'Количество']
+  unit_price      decimal   [note: 'Цена за единицу']
+  synced_at       timestamp [default: `now()`, note: 'Когда синхронизировано']
+
+  Note: 'Транзакции продаж, загруженные из POS-системы'
+
+  indexes {
+    transaction_date
+    store_id
+  }
+}
+
+// ── Прогнозы ML-модели ───────────────────────────────────────
+Table forecasts {
+  id              int       [pk, increment]
+  ingredient_id   int       [not null, ref: > ingredients.id, note: 'FK → ingredients']
+  forecast_date   date      [not null, note: 'Дата прогноза']
+  predicted_qty   decimal   [not null, note: 'Прогнозируемый расход']
+  lower_bound     decimal   [note: 'Нижняя граница (CI 95%)']
+  upper_bound     decimal   [note: 'Верхняя граница (CI 95%)']
+  model_name      varchar   [default: 'Prophet', note: 'Название модели']
+  created_at      timestamp [default: `now()`]
+
+  Note: 'Результат работы ML: прогноз расхода сырья по дням'
+
+  indexes {
+    (ingredient_id, forecast_date) [unique]
+  }
+}
+
+// ── Черновик заказа поставщику ────────────────────────────────
+Table order_drafts {
+  id              int       [pk, increment]
+  ingredient_id   int       [not null, ref: > ingredients.id, note: 'FK → ingredients']
+  current_stock   decimal   [note: 'Остаток на момент формирования']
+  forecast_qty    decimal   [note: 'Прогноз расхода (из ML)']
+  recommended_qty decimal   [not null, note: 'Рекомендуемое количество к заказу']
+  approved_qty    decimal   [note: 'Количество, утверждённое менеджером']
+  status          varchar   [not null, default: 'draft', note: 'draft / approved / sent']
+  approved_by     int       [ref: > users.id, note: 'FK → users (кто утвердил)']
+  created_at      timestamp [default: `now()`]
+  approved_at     timestamp [note: 'Когда утверждён']
+
+  Note: 'Автоматически сформированная заявка на закупку сырья'
+
+  indexes {
+    status
+    created_at
+  }
+}
+
+// ── Лог обратной связи (самообучение модели) ─────────────────
+Table feedback_log {
+  id              int       [pk, increment]
+  ingredient_id   int       [not null, ref: > ingredients.id, note: 'FK → ingredients']
+  forecast_date   date      [not null, note: 'Дата прогноза']
+  recommended_qty decimal   [not null, note: 'Что предложил AI']
+  approved_qty    decimal   [not null, note: 'Что утвердил менеджер']
+  delta           decimal   [not null, note: 'approved - recommended (bias)']
+  reason          varchar   [note: 'Комментарий менеджера']
+  created_at      timestamp [default: `now()`]
+
+  Note: 'Цикл обратной связи: менеджер корректирует прогноз → модель учится'
+}

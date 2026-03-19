@@ -1,1 +1,29 @@
+# Личные папки (не трогать)
 /DoNotTouch
+/.secrets
+/Архитектура
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.env
+
+# База данных (Railway создаст свою через DATABASE_URL)
+*.db
+*.sqlite3
+
+# ML артефакты (большой бинарный файл — не нужен в репо)
+ml/forecast_plot.png
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
