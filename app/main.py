@@ -8,7 +8,9 @@ API с реальной БД (SQLite/PostgreSQL), feedback loop,
 """
 
 import os
-from datetime import date, datetime
+import random
+import hashlib
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -109,10 +111,13 @@ class OrderDraftItem(BaseModel):
     ingredient: str = Field(..., description="Название ингредиента")
     unit: str = Field(..., description="Единица измерения")
     current_stock: float = Field(..., description="Текущий остаток")
+    min_stock: float = Field(0.0, description="Минимальный остаток (порог)")
     forecast_qty: float = Field(..., description="Прогноз расхода (7 дн.)")
     recommended_qty: float = Field(..., description="Рекомендация к заказу")
     bias_correction: float = Field(0.0, description="Коррекция на основе обратной связи")
     supplier: str = Field(..., description="Поставщик")
+    auto_send: bool = Field(False, description="True = авто-отправка, False = требуется утверждение")
+    anomaly_reason: Optional[str] = Field(None, description="Причина, если требуется утверждение")
 
 
 class OrderDraftsResponse(BaseModel):
@@ -120,6 +125,8 @@ class OrderDraftsResponse(BaseModel):
     generated_at: str
     forecast_days: int
     feedback_applied: bool
+    auto_send_count: int = Field(0, description="Позиций для авто-отправки")
+    needs_approval_count: int = Field(0, description="Позиций, требующих утверждения")
     drafts: list[OrderDraftItem]
 
 
@@ -212,6 +219,8 @@ async def get_order_drafts(db: Session = Depends(get_db)) -> OrderDraftsResponse
     drafts: list[OrderDraftItem] = []
     feedback_applied = False
 
+    ANOMALY_MULTIPLIER = 2.0  # если рекомендация > прогноз × 2 — аномалия
+
     for ing in ingredients:
         forecast_qty = base_forecasts.get(ing.name, 10.0)
 
@@ -229,23 +238,45 @@ async def get_order_drafts(db: Session = Depends(get_db)) -> OrderDraftsResponse
         # Корректируем прогноз на основе обратной связи менеджера
         adjusted_forecast = forecast_qty + bias
         stock = float(ing.current_stock)
+        min_stock_val = float(ing.min_stock)
         recommended = max(0, adjusted_forecast - stock)
+
+        # ── Логика авто-отправки vs утверждение менеджером ──
+        anomaly_reason = None
+        auto_send = True
+
+        if stock < min_stock_val:
+            auto_send = False
+            anomaly_reason = f"Остаток ({stock:.1f}) ниже минимума ({min_stock_val:.1f}) — критический уровень"
+        elif recommended > forecast_qty * ANOMALY_MULTIPLIER:
+            auto_send = False
+            anomaly_reason = f"Рекомендация ({recommended:.1f}) аномально высокая (>{forecast_qty * ANOMALY_MULTIPLIER:.1f})"
+        elif recommended <= 0:
+            auto_send = True  # заказ не нужен, всё в норме
 
         drafts.append(OrderDraftItem(
             id=ing.id,
             ingredient=ing.name,
             unit=ing.unit,
             current_stock=stock,
+            min_stock=min_stock_val,
             forecast_qty=round(adjusted_forecast, 1),
             recommended_qty=round(recommended, 1),
             bias_correction=round(bias, 2),
             supplier=ing.supplier_name or "Не указан",
+            auto_send=auto_send,
+            anomaly_reason=anomaly_reason,
         ))
+
+    auto_count = sum(1 for d in drafts if d.auto_send)
+    approval_count = sum(1 for d in drafts if not d.auto_send)
 
     return OrderDraftsResponse(
         generated_at=datetime.now().strftime("%d.%m.%Y %H:%M"),
         forecast_days=7,
         feedback_applied=feedback_applied,
+        auto_send_count=auto_count,
+        needs_approval_count=approval_count,
         drafts=drafts,
     )
 
@@ -288,13 +319,46 @@ async def approve_order(request: ApproveRequest, db: Session = Depends(get_db)) 
     )
 
 
+class SupplierApiLog(BaseModel):
+    """Симуляция HTTP-лога запроса к API поставщика."""
+    supplier: str
+    request_url: str
+    request_method: str = "POST"
+    request_body: dict
+    response_status: int = 200
+    response_body: dict
+    latency_ms: int
+
+
+class SendOrderLogItem(BaseModel):
+    """Одна строка результата отправки."""
+    ingredient: str
+    supplier: str
+    ordered_qty: float
+    unit: str
+    stock_before: float
+    stock_after: float
+    order_number: str
+    delivery_eta: str
+    status: str
+
+
 class SendOrderResponse(BaseModel):
     """Ответ после «отправки» заказа поставщику."""
     status: str
     sent_count: int
     stock_updated: bool
-    order_log: list[dict]
+    order_log: list[SendOrderLogItem]
+    api_logs: list[SupplierApiLog]
+    total_cost: float
     message: str
+
+
+def _generate_order_number(supplier: str) -> str:
+    """Генерирует уникальный номер заказа."""
+    seed = f"{supplier}-{datetime.now().isoformat()}-{random.randint(1000,9999)}"
+    short_hash = hashlib.md5(seed.encode()).hexdigest()[:6].upper()
+    return f"CF-{datetime.now().strftime('%Y')}-{short_hash}"
 
 
 @app.post(
@@ -307,37 +371,91 @@ async def send_order_to_supplier(
     request: ApproveRequest, db: Session = Depends(get_db)
 ) -> SendOrderResponse:
     """
-    Симуляция отправки заказа поставщику.
-    После «отправки»:
-    1. Статус заказа → 'sent'
-    2. Остатки на складе (current_stock) увеличиваются на approved_qty
-       — имитация прихода товара.
-    3. Возвращается лог операции для отображения в UI.
+    Симуляция отправки заказа поставщику через API.
+    Для каждого поставщика генерируется:
+    1. HTTP-запрос к "API поставщика" (фейковый URL, но реалистичный payload)
+    2. Ответ с номером заказа и датой доставки
+    3. Обновление запасов на складе
+    4. Полный API-лог для отображения в UI (доказательство отправки)
     """
     if not request.items:
         raise HTTPException(status_code=400, detail="Список позиций пуст")
 
-    order_log: list[dict] = []
+    order_log: list[SendOrderLogItem] = []
+    api_logs: list[SupplierApiLog] = []
+    total_cost: float = 0.0
+
+    # Группируем по поставщику для реалистичной симуляции
+    supplier_urls = {
+        "CoffeeBean Co.": "https://api.coffeebean.co/v1/orders",
+        "МолокоОпт":      "https://api.moloko-opt.ru/v2/supply",
+        "PackSupply":     "https://api.packsupply.com/v1/orders",
+        "ChocoTrade":     "https://api.chocotrade.com/orders",
+        "TeaWorld":       "https://api.teaworld.com/v1/purchase",
+        "СахарОпт":       "https://api.sahar-opt.ru/orders",
+        "SyrupHouse":     "https://api.syruphouse.com/v1/orders",
+        "FreshBakery":    "https://api.freshbakery.ru/v1/supply",
+    }
 
     for item in request.items:
         ing = db.get(Ingredient, item.ingredient_id)
         if not ing:
             continue
 
+        supplier_name = ing.supplier_name or "Unknown"
+        order_number = _generate_order_number(supplier_name)
+        delivery_days = random.randint(1, 3)
+        delivery_eta = (date.today() + timedelta(days=delivery_days)).isoformat()
+        latency = random.randint(80, 350)
+        cost = float(ing.price_per_unit or 0) * item.approved_qty
+        total_cost += cost
+
         # Обновляем остатки: симуляция прихода товара
         stock_before = float(ing.current_stock)
         ing.current_stock = ing.current_stock + Decimal(str(item.approved_qty))
         stock_after = float(ing.current_stock)
 
-        order_log.append({
-            "ingredient": ing.name,
-            "supplier": ing.supplier_name,
-            "ordered_qty": item.approved_qty,
-            "unit": ing.unit,
-            "stock_before": round(stock_before, 1),
-            "stock_after": round(stock_after, 1),
-            "status": "✅ Отправлено",
-        })
+        # API-лог: имитация HTTP-запроса/ответа
+        api_url = supplier_urls.get(supplier_name, f"https://api.supplier.example/v1/orders")
+        request_body = {
+            "supplier": supplier_name,
+            "items": [{
+                "ingredient": ing.name,
+                "quantity": item.approved_qty,
+                "unit": ing.unit,
+            }],
+            "delivery_address": "г. Москва, ул. Кофейная 15",
+            "requested_delivery": delivery_eta,
+        }
+        response_body = {
+            "status": "accepted",
+            "order_number": order_number,
+            "estimated_delivery": delivery_eta,
+            "total_cost": round(cost, 2),
+            "currency": "RUB",
+            "message": f"Заказ {order_number} принят в обработку",
+        }
+
+        api_logs.append(SupplierApiLog(
+            supplier=supplier_name,
+            request_url=api_url,
+            request_body=request_body,
+            response_status=200,
+            response_body=response_body,
+            latency_ms=latency,
+        ))
+
+        order_log.append(SendOrderLogItem(
+            ingredient=ing.name,
+            supplier=supplier_name,
+            ordered_qty=item.approved_qty,
+            unit=ing.unit,
+            stock_before=round(stock_before, 1),
+            stock_after=round(stock_after, 1),
+            order_number=order_number,
+            delivery_eta=delivery_eta,
+            status="✅ Отправлено",
+        ))
 
         # Сохраняем feedback
         delta = item.approved_qty - item.recommended_qty
@@ -356,8 +474,10 @@ async def send_order_to_supplier(
         sent_count=len(order_log),
         stock_updated=True,
         order_log=order_log,
+        api_logs=api_logs,
+        total_cost=round(total_cost, 2),
         message=f"Заказ отправлен {len(order_log)} поставщикам. "
-                "Остатки на складе обновлены.",
+                f"Общая сумма: {total_cost:,.0f} ₽. Остатки обновлены.",
     )
 
 
@@ -405,3 +525,8 @@ if os.path.isdir(_static_dir):
     async def serve_frontend():
         """Главная страница — дашборд менеджера."""
         return FileResponse(os.path.join(_static_dir, "index.html"))
+
+    @app.get("/analytics.html", include_in_schema=False)
+    async def serve_analytics():
+        """Страница аналитики — техническая информация по ML."""
+        return FileResponse(os.path.join(_static_dir, "analytics.html"))

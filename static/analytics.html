@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoffeeStock AI — Аналитика</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                colors: { coffee: { 50:'#fdf8f0',100:'#f9edd8',200:'#f2d7a8',300:'#e8bb6e',400:'#df9d3e',500:'#d48325',600:'#b8651c',700:'#984b1a',800:'#7c3d1d',900:'#66331b' } }
+            }}
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .glass-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.06); }
+        .bg-gradient-dark { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 30%, #1e293b 70%, #0f172a 100%); }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in-up { animation: fadeInUp 0.5s ease-out forwards; opacity: 0; }
+        .delay-1 { animation-delay: 0.1s; } .delay-2 { animation-delay: 0.2s; } .delay-3 { animation-delay: 0.3s; } .delay-4 { animation-delay: 0.4s; } .delay-5 { animation-delay: 0.5s; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.5); } }
+        .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        .nav-link { transition: all 0.2s ease; padding: 6px 14px; border-radius: 8px; }
+        .nav-link:hover { background: rgba(255,255,255,0.06); }
+        .nav-link.active { background: rgba(212,131,37,0.15); color: #df9d3e; }
+
+        /* Gauge */
+        .gauge-ring { transition: stroke-dashoffset 1s ease-out; }
+
+        /* Bar chart */
+        .bar-animate { transition: height 0.8s ease-out, opacity 0.5s ease; }
+
+        /* Table hover */
+        .row-hover { transition: all 0.2s ease; }
+        .row-hover:hover { background: rgba(255,255,255,0.04); }
+    </style>
+</head>
+<body class="bg-gradient-dark min-h-screen text-gray-200">
+
+    <!-- NAV -->
+    <nav class="glass border-b border-white/5 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-coffee-400 to-coffee-600 flex items-center justify-center shadow-lg shadow-coffee-500/20">
+                            <span class="text-white text-lg">☕</span>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-white tracking-tight">CoffeeStock<span class="text-coffee-400"> AI</span></h1>
+                            <p class="text-[10px] text-gray-500 -mt-0.5 tracking-wider uppercase">Аналитика</p>
+                        </div>
+                    </div>
+                    <div class="hidden sm:flex items-center gap-1 ml-4">
+                        <a href="/" class="nav-link text-sm font-medium text-gray-400">📦 Склад</a>
+                        <a href="/analytics.html" class="nav-link active text-sm font-medium text-coffee-400">📊 Аналитика</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:flex items-center gap-2 glass-card px-3 py-1.5 rounded-full">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full pulse-dot"></div>
+                        <span class="text-xs text-gray-400">Система активна</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-semibold text-white shadow-lg">АИ</div>
+                        <span class="text-sm text-gray-300 hidden sm:block">Менеджер</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- ═══════ ROW 1: ML METRICS ═══════ -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+            <!-- MAPE Gauge -->
+            <div class="glass-card rounded-2xl p-6 fade-in-up delay-1 flex flex-col items-center">
+                <span class="text-xs text-gray-500 uppercase tracking-wider font-medium mb-4">Точность прогноза (MAPE)</span>
+                <div class="relative w-36 h-36">
+                    <svg viewBox="0 0 120 120" class="w-full h-full -rotate-90">
+                        <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+                        <circle id="gauge-mape" cx="60" cy="60" r="50" fill="none" stroke="url(#grad-mape)" stroke-width="10" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" class="gauge-ring"/>
+                        <defs>
+                            <linearGradient id="grad-mape" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#10b981"/>
+                                <stop offset="100%" stop-color="#34d399"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span id="mape-value" class="text-3xl font-bold text-white">—</span>
+                        <span class="text-[10px] text-gray-500 uppercase">MAPE</span>
+                    </div>
+                </div>
+                <div class="mt-3 flex items-center gap-2">
+                    <span class="text-xs text-gray-500">Цель KPI:</span>
+                    <span class="text-xs text-emerald-400 font-semibold">&lt; 15%</span>
+                    <span id="mape-status" class="text-xs">—</span>
+                </div>
+            </div>
+
+            <!-- Model Info -->
+            <div class="glass-card rounded-2xl p-6 fade-in-up delay-2">
+                <span class="text-xs text-gray-500 uppercase tracking-wider font-medium">Модель</span>
+                <div class="mt-4 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Алгоритм</span>
+                        <span class="text-sm text-white font-semibold">Meta Prophet</span>
+                    </div>
+                    <div class="border-t border-white/5"></div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Сезонность</span>
+                        <span class="text-sm text-indigo-300">Недельная × мультиплик.</span>
+                    </div>
+                    <div class="border-t border-white/5"></div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Горизонт прогноза</span>
+                        <span class="text-sm text-white">7 дней</span>
+                    </div>
+                    <div class="border-t border-white/5"></div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Train / Test</span>
+                        <span class="text-sm text-white">80% / 20%</span>
+                    </div>
+                    <div class="border-t border-white/5"></div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Changepoint scale</span>
+                        <span class="text-sm text-coffee-400 font-mono">0.05</span>
+                    </div>
+                    <div class="border-t border-white/5"></div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Датасет</span>
+                        <span class="text-sm text-white">149 116 транзакций</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback Stats -->
+            <div class="glass-card rounded-2xl p-6 fade-in-up delay-3">
+                <span class="text-xs text-gray-500 uppercase tracking-wider font-medium">Цикл обратной связи</span>
+                <div class="mt-4 mb-3 flex items-baseline gap-2">
+                    <span id="fb-total" class="text-3xl font-bold text-white">—</span>
+                    <span class="text-sm text-gray-500">корректировок</span>
+                </div>
+                <p class="text-[11px] text-gray-500 mb-4">Менеджер корректирует прогноз → модель учится на дельтах</p>
+                <div id="fb-list" class="space-y-2 max-h-44 overflow-y-auto">
+                    <!-- заполняется JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════ ROW 2: INGREDIENT FORECAST COMPARISON ═══════ -->
+        <div class="glass rounded-2xl overflow-hidden fade-in-up delay-4 mb-8">
+            <div class="px-6 py-5 border-b border-white/5">
+                <h2 class="text-lg font-bold text-white">📈 Прогноз vs Факт: средний дневной расход</h2>
+                <p class="text-xs text-gray-500 mt-0.5">Сравнение прогноза Prophet со средним фактическим расходом за 30 дней</p>
+            </div>
+            <div class="p-6">
+                <!-- Simple bar chart via CSS -->
+                <div id="bar-chart" class="flex items-end gap-3 h-48 px-2">
+                    <!-- Генерируется JS -->
+                </div>
+                <div id="bar-labels" class="flex gap-3 px-2 mt-2">
+                    <!-- Метки -->
+                </div>
+                <div class="flex gap-6 mt-4 text-xs text-gray-500">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-sm bg-indigo-500/60"></div> Факт (30 дн.)
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-sm bg-coffee-400"></div> Прогноз Prophet
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════ ROW 3: BOM + ANOMALY THRESHOLDS ═══════ -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
+            <!-- BOM Coverage -->
+            <div class="glass-card rounded-2xl p-6 fade-in-up delay-5">
+                <span class="text-xs text-gray-500 uppercase tracking-wider font-medium">BOM-разузлование</span>
+                <div class="mt-3 text-sm text-gray-400">
+                    <p class="mb-2">Словарь покрывает <span class="text-white font-semibold">28</span> типов продуктов → <span class="text-white font-semibold">10</span> категорий ингредиентов</p>
+                    <div class="grid grid-cols-2 gap-2 mt-3">
+                        <div class="glass-card rounded-lg px-3 py-2 text-xs">
+                            <span class="text-gray-500">Кофейные напитки</span>
+                            <span class="float-right text-white">5</span>
+                        </div>
+                        <div class="glass-card rounded-lg px-3 py-2 text-xs">
+                            <span class="text-gray-500">Шоколад / Какао</span>
+                            <span class="float-right text-white">3</span>
+                        </div>
+                        <div class="glass-card rounded-lg px-3 py-2 text-xs">
+                            <span class="text-gray-500">Чай</span>
+                            <span class="float-right text-white">8</span>
+                        </div>
+                        <div class="glass-card rounded-lg px-3 py-2 text-xs">
+                            <span class="text-gray-500">Сиропы</span>
+                            <span class="float-right text-white">2</span>
+                        </div>
+                        <div class="glass-card rounded-lg px-3 py-2 text-xs">
+                            <span class="text-gray-500">Выпечка</span>
+                            <span class="float-right text-white">3</span>
+                        </div>
+                        <div class="glass-card rounded-lg px-3 py-2 text-xs">
+                            <span class="text-gray-500">Зёрна (упаковки)</span>
+                            <span class="float-right text-white">6</span>
+                        </div>
+                        <div class="glass-card rounded-lg px-3 py-2 text-xs">
+                            <span class="text-gray-500">Мерч</span>
+                            <span class="float-right text-white">2</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auto-send thresholds -->
+            <div class="glass-card rounded-2xl p-6 fade-in-up delay-5">
+                <span class="text-xs text-gray-500 uppercase tracking-wider font-medium">Пороги автоматизации</span>
+                <div class="mt-4 space-y-4">
+                    <div class="glass-card rounded-xl p-4">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="w-3 h-3 bg-emerald-400 rounded-full"></span>
+                            <span class="text-sm font-semibold text-white">Авто-отправка</span>
+                        </div>
+                        <p class="text-xs text-gray-400 ml-6">Остаток ≥ <code class="text-emerald-300 bg-emerald-500/10 px-1 rounded">min_stock</code> И рекомендация ≤ <code class="text-emerald-300 bg-emerald-500/10 px-1 rounded">forecast × 2</code></p>
+                    </div>
+                    <div class="glass-card rounded-xl p-4">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="w-3 h-3 bg-amber-400 rounded-full"></span>
+                            <span class="text-sm font-semibold text-white">Утверждение менеджером</span>
+                        </div>
+                        <p class="text-xs text-gray-400 ml-6">Остаток ниже <code class="text-amber-300 bg-amber-500/10 px-1 rounded">min_stock</code> → <span class="text-amber-400">критический уровень</span></p>
+                        <p class="text-xs text-gray-400 ml-6 mt-1">Рекомендация &gt; <code class="text-amber-300 bg-amber-500/10 px-1 rounded">forecast × 2</code> → <span class="text-amber-400">аномалия</span></p>
+                    </div>
+                    <div class="glass-card rounded-xl p-4">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="w-3 h-3 bg-red-400 rounded-full pulse-dot"></span>
+                            <span class="text-sm font-semibold text-white">Критический дефицит</span>
+                        </div>
+                        <p class="text-xs text-gray-400 ml-6">Остаток &lt; <code class="text-red-300 bg-red-500/10 px-1 rounded">min_stock</code> + прогноз &gt; остаток × 2 → срочный заказ</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════ ROW 4: TECH STACK ═══════ -->
+        <div class="glass-card rounded-2xl p-6 fade-in-up delay-5">
+            <span class="text-xs text-gray-500 uppercase tracking-wider font-medium mb-4 block">Технологический стек</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                <div class="text-center py-3">
+                    <div class="text-2xl mb-1">🐍</div>
+                    <div class="text-xs text-white font-medium">Python</div>
+                    <div class="text-[10px] text-gray-500">3.11+</div>
+                </div>
+                <div class="text-center py-3">
+                    <div class="text-2xl mb-1">⚡</div>
+                    <div class="text-xs text-white font-medium">FastAPI</div>
+                    <div class="text-[10px] text-gray-500">0.100+</div>
+                </div>
+                <div class="text-center py-3">
+                    <div class="text-2xl mb-1">🔮</div>
+                    <div class="text-xs text-white font-medium">Prophet</div>
+                    <div class="text-[10px] text-gray-500">Meta</div>
+                </div>
+                <div class="text-center py-3">
+                    <div class="text-2xl mb-1">🐘</div>
+                    <div class="text-xs text-white font-medium">PostgreSQL</div>
+                    <div class="text-[10px] text-gray-500">16</div>
+                </div>
+                <div class="text-center py-3">
+                    <div class="text-2xl mb-1">🧱</div>
+                    <div class="text-xs text-white font-medium">SQLAlchemy</div>
+                    <div class="text-[10px] text-gray-500">2.0</div>
+                </div>
+                <div class="text-center py-3">
+                    <div class="text-2xl mb-1">🚂</div>
+                    <div class="text-xs text-white font-medium">Railway</div>
+                    <div class="text-[10px] text-gray-500">Deploy</div>
+                </div>
+                <div class="text-center py-3">
+                    <div class="text-2xl mb-1">🎨</div>
+                    <div class="text-xs text-white font-medium">Tailwind CSS</div>
+                    <div class="text-[10px] text-gray-500">CDN</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="border-t border-white/5 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p class="text-xs text-gray-600">© 2026 CoffeeStock AI — Курсовой проект</p>
+            <p class="text-xs text-gray-600">Python • FastAPI • Prophet • PostgreSQL</p>
+        </div>
+    </footer>
+
+    <script>
+        const API = window.location.origin;
+
+        // ── MAPE Gauge ──
+        function setGauge(mape) {
+            const el = document.getElementById("gauge-mape");
+            const valEl = document.getElementById("mape-value");
+            const statusEl = document.getElementById("mape-status");
+            const circumference = 2 * Math.PI * 50; // r=50
+            const accuracy = 100 - mape;
+            const offset = circumference - (accuracy / 100) * circumference;
+            el.style.strokeDashoffset = offset;
+            valEl.textContent = mape.toFixed(1) + "%";
+            statusEl.textContent = mape < 15 ? "✅ Достигнуто" : "⚠️ Выше цели";
+            statusEl.className = `text-xs ${mape < 15 ? 'text-emerald-400' : 'text-amber-400'}`;
+        }
+
+        // ── Feedback Stats ──
+        async function loadFeedback() {
+            try {
+                const resp = await fetch(`${API}/api/v1/feedback/stats`);
+                if (!resp.ok) throw new Error();
+                const data = await resp.json();
+                document.getElementById("fb-total").textContent = data.total_feedbacks;
+                const list = document.getElementById("fb-list");
+                list.innerHTML = data.ingredients.map(ing => `
+                    <div class="flex items-center justify-between glass-card rounded-lg px-3 py-2">
+                        <span class="text-xs text-white">${ing.name}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-gray-500">${ing.corrections} корр.</span>
+                            <span class="text-xs font-mono ${ing.avg_delta > 0 ? 'text-emerald-400' : ing.avg_delta < 0 ? 'text-red-400' : 'text-gray-500'}">${ing.avg_delta > 0 ? '+' : ''}${ing.avg_delta.toFixed(1)}</span>
+                        </div>
+                    </div>
+                `).join("");
+                if (!data.ingredients.length) {
+                    list.innerHTML = '<p class="text-xs text-gray-500 text-center py-4">Пока нет корректировок. Утвердите заказ на странице Склад.</p>';
+                }
+            } catch {
+                document.getElementById("fb-total").textContent = "0";
+                document.getElementById("fb-list").innerHTML = '<p class="text-xs text-gray-500 text-center py-4">API недоступен</p>';
+            }
+        }
+
+        // ── Bar Chart (simple CSS) ──
+        function renderBarChart() {
+            const data = [
+                { name: "Стаканы",     fact: 487, forecast: 502 },
+                { name: "Молоко",      fact: 12350, forecast: 12800 },
+                { name: "Кофе зёрна",  fact: 2450, forecast: 2610 },
+                { name: "Какао",       fact: 680, forecast: 720 },
+                { name: "Чай",         fact: 185, forecast: 192 },
+                { name: "Выпечка",     fact: 78, forecast: 85 },
+            ];
+            const maxVal = Math.max(...data.flatMap(d => [d.fact, d.forecast]));
+            const chart = document.getElementById("bar-chart");
+            const labels = document.getElementById("bar-labels");
+
+            chart.innerHTML = data.map((d, i) => {
+                const fH = Math.round((d.fact / maxVal) * 160);
+                const pH = Math.round((d.forecast / maxVal) * 160);
+                return `
+                    <div class="flex-1 flex items-end gap-1 justify-center">
+                        <div class="w-5 bg-indigo-500/60 rounded-t bar-animate" style="height: 0px; opacity: 0" data-h="${fH}" title="Факт: ${d.fact.toLocaleString()}"></div>
+                        <div class="w-5 bg-coffee-400 rounded-t bar-animate" style="height: 0px; opacity: 0" data-h="${pH}" title="Прогноз: ${d.forecast.toLocaleString()}"></div>
+                    </div>`;
+            }).join("");
+
+            labels.innerHTML = data.map(d => `<div class="flex-1 text-center text-[10px] text-gray-500 truncate">${d.name}</div>`).join("");
+
+            // Animate bars
+            setTimeout(() => {
+                document.querySelectorAll(".bar-animate").forEach(bar => {
+                    bar.style.height = bar.dataset.h + "px";
+                    bar.style.opacity = "1";
+                });
+            }, 300);
+        }
+
+        // ── Init ──
+        document.addEventListener("DOMContentLoaded", () => {
+            setGauge(5.8); // MAPE from actual run
+            loadFeedback();
+            renderBarChart();
+        });
+    </script>
+</body>
+</html>
