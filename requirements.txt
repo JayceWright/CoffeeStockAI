@@ -9,3 +9,4 @@ pydantic
 openai>=1.0         # для OpenRouter (OpenAI-compatible SDK)
 requests            # для OpenWeatherMap
 python-dotenv       # загрузка .env файла
+slowapi             # для Rate Limiting (защита M1 модуля)

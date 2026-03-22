@@ -35,6 +35,14 @@ from db.models import (
     Base, SalesHistory, Ingredient, OrderDraft, FeedbackLog, Forecast,
 )
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+# ── Инициализация Rate Limiting ───────────────────────────────
+# Используем IP-адрес клиента для ограничения (get_remote_address)
+limiter = Limiter(key_func=get_remote_address)
+
 # ── Инициализация приложения ──────────────────────────────────
 app = FastAPI(
     title="CoffeeStock AI",
@@ -50,6 +58,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Подключаем Rate Limiter к приложению
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # ── Создаём таблицы и заполняем начальные данные при старте ───
@@ -85,6 +97,19 @@ def _seed_ingredients():
     finally:
         db.close()
 
+from fastapi import Request
+
+# ── Эндпоинты для JMeter (M1: Интеграция POS) ─────────────────
+@app.post("/api/v1/pos/sync")
+@limiter.limit("4/second")
+async def pos_sync_endpoint(request: Request, payload: dict):
+    """
+    Эндпоинт для приема данных от POS-терминалов.
+    Защищен Rate Limiting: макс 4 запроса в секунду с одного IP.
+    Остальные получают 429 Too Many Requests.
+    """
+    # Имитация работы: парсинг чека
+    return {"status": "success", "message": "Transaction synced", "data_received": len(payload)}
 
 # ── Pydantic-модели (схемы запросов / ответов) ────────────────
 
