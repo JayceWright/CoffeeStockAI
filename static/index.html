@@ -642,12 +642,9 @@
                     <td class="px-6 py-4"><span class="whitespace-nowrap text-xs text-gray-500 bg-white/3 px-2 py-1 rounded-md">${d.supplier}</span></td>
                     <td class="px-6 py-4"><span class="text-[11px] text-amber-400/80 line-clamp-2 max-w-[120px]" title="${d.anomaly_reason || '—'}">${d.anomaly_reason || '—'}</span></td>
                     <td class="px-6 py-4 text-center">
-                        <div class="relative inline-block text-center">
-                            <button onclick="askAI(${i})" id="ai-btn-${i}" class="whitespace-nowrap flex items-center justify-center gap-1.5 mx-auto px-2 py-1 rounded-lg text-[11px] font-medium text-indigo-300 border border-indigo-500/20 hover:bg-indigo-500/10 transition-all" title="Спросить ИИ">
-                                <span>🧠</span> <span>Ask AI</span>
-                            </button>
-                            <div id="ai-answer-${i}" class="hidden absolute right-0 top-full z-[100] mt-2 w-64 text-left text-[11px] text-emerald-100 bg-[#0f172a] border border-emerald-500/30 rounded-xl p-3 shadow-[0_10px_40px_rgba(0,0,0,0.5)] max-h-48 overflow-y-auto"></div>
-                        </div>
+                        <button onclick="askAI(${i})" id="ai-btn-${i}" class="whitespace-nowrap flex items-center justify-center gap-1.5 mx-auto px-2 py-1 rounded-lg text-[11px] font-medium text-indigo-300 border border-indigo-500/20 hover:bg-indigo-500/10 transition-all" title="Спросить ИИ">
+                            <span>🧠</span> <span>Ask AI</span>
+                        </button>
                     </td>
                 </tr>`;
             }).join("");
@@ -745,13 +742,19 @@
             }
         }
 
-        // ── Ask AI (Gemini) ──
+        // ── Ask AI (OpenRouter) — глобальный модал ──
+        function closeAiModal() {
+            document.getElementById('ai-global-modal').classList.add('hidden');
+        }
         async function askAI(index) {
             const d = approvalItems[index];
             const btn = document.getElementById(`ai-btn-${index}`);
-            const ansDiv = document.getElementById(`ai-answer-${index}`);
+            const modal = document.getElementById('ai-global-modal');
+            const content = document.getElementById('ai-modal-content');
             btn.innerHTML = '⏳ Анализ...';
             btn.disabled = true;
+            content.innerHTML = '<div class="text-center text-gray-400 py-8">⏳ Запрос к OpenRouter...</div>';
+            modal.classList.remove('hidden');
             try {
                 const resp = await fetch(`${API_BASE}/api/v1/ai/explain`, {
                     method: 'POST',
@@ -767,11 +770,9 @@
                     }),
                 });
                 const data = await resp.json();
-                ansDiv.innerHTML = `🧠 <strong>ИИ-рекомендация:</strong><br>${data.explanation}`;
-                ansDiv.classList.remove('hidden');
+                content.innerHTML = `<div class="text-emerald-100 leading-relaxed">🧠 <strong>ИИ-рекомендация для ${d.ingredient}:</strong><br><br>${data.explanation}</div>`;
             } catch (e) {
-                ansDiv.innerHTML = '⚠️ Ошибка при обращении к AI';
-                ansDiv.classList.remove('hidden');
+                content.innerHTML = '<div class="text-red-400">⚠️ Ошибка при обращении к AI</div>';
             }
             btn.innerHTML = '🧠 Ask AI';
             btn.disabled = false;
@@ -847,5 +848,18 @@
 
         document.addEventListener("DOMContentLoaded", () => { loadDrafts(); loadWeather(); });
     </script>
+
+    <!-- Глобальный AI-модал (вне всех контейнеров, поверх всего) -->
+    <div id="ai-global-modal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center p-4" onclick="if(event.target===this)closeAiModal()">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-xl bg-[#0f172a] border border-emerald-500/30 rounded-2xl shadow-[0_25px_80px_rgba(0,0,0,0.8)] overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-white/10">
+                <span class="text-sm font-semibold text-white">🧠 AI-анализ (OpenRouter)</span>
+                <button onclick="closeAiModal()" class="text-gray-500 hover:text-white text-xl transition-colors">✕</button>
+            </div>
+            <div id="ai-modal-content" class="px-5 py-4 text-[13px] max-h-[60vh] overflow-y-auto"></div>
+        </div>
+    </div>
+
 </body>
 </html>
