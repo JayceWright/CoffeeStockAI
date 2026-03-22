@@ -295,7 +295,7 @@ YOUR_SITE_NAME=CoffeeStockAI
 
 Главная страница системы — операционный центр управления запасами. Отображает текущее состояние склада в режиме реального времени.
 
-![Рис. A1 — Главная панель: KPI-карточки и начало таблицы авто-заказов](/C:/Users/Azizbek/.gemini/antigravity/brain/b39db8ff-8f02-497d-9dcb-c9b59f671377/admin_dashboard_top_1774200553817.png)
+![Рис. A1 — Главная панель: KPI-карточки и начало таблицы авто-заказов](docs/screenshots/01_dashboard_top.png)
 
 **KPI-карточки (верхний блок):**
 
@@ -308,7 +308,7 @@ YOUR_SITE_NAME=CoffeeStockAI
 
 #### Таблица «Авто-отправка поставщикам»
 
-![Рис. A2 — Таблица автоматических заказов (9 позиций)](/C:/Users/Azizbek/.gemini/antigravity/brain/b39db8ff-8f02-497d-9dcb-c9b59f671377/admin_auto_orders_table_1774200558923.png)
+![Рис. A2 — Таблица автоматических заказов (9 позиций)](docs/screenshots/02_auto_orders_table.png)
 
 Блок отображает позиции, по которым система приняла решение о заказе **полностью автоматически** (без участия менеджера). 
 
@@ -330,7 +330,7 @@ YOUR_SITE_NAME=CoffeeStockAI
 
 #### Блок «Требуют утверждения менеджером»
 
-![Рис. A3 — Секция утверждения менеджером](/C:/Users/Azizbek/.gemini/antigravity/brain/b39db8ff-8f02-497d-9dcb-c9b59f671377/admin_approval_section_1774200564052.png)
+![Рис. A3 — Секция утверждения менеджером](docs/screenshots/03_approval_section.png)
 
 Отображает позиции, требующие ручного утверждения (обнаружена аномалия). Менеджер может:
 - Изменить рекомендуемое количество в поле ввода
@@ -340,7 +340,7 @@ YOUR_SITE_NAME=CoffeeStockAI
 
 Если аномалий нет — отображается сообщение «🎉 Все позиции в норме!».
 
-![Рис. A4 — Нижняя часть главной страницы (приём поставки, темп/светлая тема)](/C:/Users/Azizbek/.gemini/antigravity/brain/b39db8ff-8f02-497d-9dcb-c9b59f671377/admin_dashboard_bottom_1774200571290.png)
+![Рис. A4 — Нижняя часть главной страницы (приём поставки, темп/светлая тема)](docs/screenshots/04_dashboard_bottom.png)
 
 **Кнопки нижней части:**
 - **📦 Принять поставку** — открывает модальное окно для внесения фактически полученных товаров. Обновляет складские остатки в БД.
@@ -356,7 +356,7 @@ YOUR_SITE_NAME=CoffeeStockAI
 
 #### Блок метрик модели
 
-![Рис. A5 — Карточки метрик: MAPE, алгоритм, цикл обратной связи](/C:/Users/Azizbek/.gemini/antigravity/brain/b39db8ff-8f02-497d-9dcb-c9b59f671377/admin_analytics_metrics_1774200584372.png)
+![Рис. A5 — Карточки метрик: MAPE, алгоритм, цикл обратной связи](docs/screenshots/05_analytics_metrics.png)
 
 Три карточки с ключевыми метриками:
 
@@ -368,13 +368,13 @@ YOUR_SITE_NAME=CoffeeStockAI
 
 #### График «Прогноз vs Факт»
 
-![Рис. A6 — Сравнительная диаграмма Прогноз vs Факт по ингредиентам](/C:/Users/Azizbek/.gemini/antigravity/brain/b39db8ff-8f02-497d-9dcb-c9b59f671377/admin_forecast_vs_fact_1774200590332.png)
+![Рис. A6 — Сравнительная диаграмма Прогноз vs Факт по ингредиентам](docs/screenshots/06_forecast_vs_fact.png)
 
 Столбчатая диаграмма сравнивает **средний дневной прогноз** (синий) с **фактическим расходом за 30 дней** (жёлтый) по 6 ключевым ингредиентам. Число над каждой парой столбцов — процент точности (100% − MAPE конкретного ингредиента). Диапазон: 92–97%.
 
 #### Интерактивный график прогноза
 
-![Рис. A7 — Интерактивный график прогноза (Hybrid Ensemble)](/C:/Users/Azizbek/.gemini/antigravity/brain/b39db8ff-8f02-497d-9dcb-c9b59f671377/admin_interactive_forecast_1774200596096.png)
+![Рис. A7 — Интерактивный график прогноза (Hybrid Ensemble)](docs/screenshots/07_interactive_forecast.png)
 
 Интерактивный линейный график отображает:
 - **Синяя пунктирная линия** — фактические данные за прошедший период (30 дней)
@@ -387,7 +387,7 @@ YOUR_SITE_NAME=CoffeeStockAI
 
 #### Технологический стек
 
-![Рис. A8 — Раздел технологического стека](/C:/Users/Azizbek/.gemini/antigravity/brain/b39db8ff-8f02-497d-9dcb-c9b59f671377/admin_tech_stack_1774200601675.png)
+![Рис. A8 — Раздел технологического стека](docs/screenshots/08_tech_stack.png)
 
 В нижней части страницы аналитики отображается полный список технологий системы: Python 3.10+, FastAPI 0.100+, Prophet (Meta), PostgreSQL 16, SQLAlchemy 2.0, Railway (Deploy), OpenWeather API, OpenRouter (AI LLM).
 
@@ -397,7 +397,7 @@ YOUR_SITE_NAME=CoffeeStockAI
 
 **URL:** `http://localhost:8000/history.html`
 
-![Рис. A9 — Страница истории заказов](/C:/Users/Azizbek/.gemini/antigravity/brain/b39db8ff-8f02-497d-9dcb-c9b59f671377/admin_history_page_1774200613953.png)
+![Рис. A9 — Страница истории заказов](docs/screenshots/09_history_page.png)
 
 Отображает полный журнал всех заказов, отправленных поставщикам. Фильтрация по:
 - Периоду дат
