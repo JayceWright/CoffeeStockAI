@@ -6,3 +6,6 @@ openpyxl
 prophet
 matplotlib
 pydantic
+openai>=1.0         # для OpenRouter (OpenAI-compatible SDK)
+requests            # для OpenWeatherMap
+python-dotenv       # загрузка .env файла

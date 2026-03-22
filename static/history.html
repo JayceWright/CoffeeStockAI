@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoffeeStock AI — История Заказов</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: { coffee: { 50: '#fdf8f0', 100: '#f9edd8', 200: '#f2d7a8', 300: '#e8bb6e', 400: '#df9d3e', 500: '#d48325', 600: '#b8651c', 700: '#984b1a', 800: '#7c3d1d', 900: '#66331b' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .bg-gradient-dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 30%, #1e293b 70%, #0f172a 100%);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.5);
+            }
+        }
+
+        .pulse-dot {
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .nav-link {
+            transition: all 0.2s ease;
+            padding: 6px 14px;
+            border-radius: 8px;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .nav-link.active {
+            background: rgba(212, 131, 37, 0.15);
+            color: #df9d3e;
+        }
+
+        /* Light Theme Overrides */
+        body.light-theme {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+        }
+
+        body.light-theme .glass {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-theme .glass-card {
+            background: rgba(255, 255, 255, 0.5);
+            border-color: rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        body.light-theme .text-white {
+            color: #0f172a;
+        }
+
+        body.light-theme .text-gray-200 {
+            color: #334155;
+        }
+
+        body.light-theme .text-gray-300 {
+            color: #475569;
+        }
+
+        body.light-theme .text-gray-400 {
+            color: #64748b;
+        }
+
+        body.light-theme .text-gray-500 {
+            color: #94a3b8;
+        }
+
+        body.light-theme .bg-white\/5 {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-theme .border-white\/5 {
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-theme .border-white\/10 {
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-theme .table-row-hover:hover {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        body.light-theme .border-b\.border-white\/3 {
+            border-color: rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-dark min-h-screen text-gray-200">
+
+    <!-- NAV -->
+    <nav class="glass border-b border-white/5 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-9 h-9 rounded-lg bg-gradient-to-br from-coffee-400 to-coffee-600 flex items-center justify-center shadow-lg shadow-coffee-500/20">
+                            <span class="text-white text-lg">☕</span>
+                        </div>
+                        <div>
+                            <a href="/" class="block hover:opacity-80 transition">
+                                <h1 class="text-lg font-bold text-white tracking-tight">CoffeeStock<span
+                                        class="text-coffee-400"> AI</span></h1>
+                                <p class="text-[10px] text-gray-500 -mt-0.5 tracking-wider uppercase">История заказов</p>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="hidden sm:flex items-center gap-1 ml-4">
+                        <a href="/" class="nav-link text-sm font-medium text-gray-400">📦 Склад</a>
+                        <a href="/analytics.html" class="nav-link text-sm font-medium text-gray-400">📊 Аналитика</a>
+                        <a href="/history.html" class="nav-link active text-sm font-medium text-coffee-400">📜
+                            История</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" onclick="toggleTheme()"
+                        class="p-2 rounded-full glass-card hover:bg-white/10 transition text-sm flex items-center justify-center w-9 h-9">
+                        🌙
+                    </button>
+
+                    <div class="hidden sm:flex items-center gap-2 glass-card px-3 py-1.5 rounded-full">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full pulse-dot"></div>
+                        <span class="text-xs text-gray-400">Система активна</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="glass rounded-2xl overflow-hidden fade-in-up">
+            <div
+                class="px-6 py-5 border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span class="text-2xl">📜</span>
+                        Лог отправленных заказов
+                    </h2>
+                    <p class="text-sm text-gray-500 mt-1">История закупок, отправленных поставщикам</p>
+                </div>
+                <div>
+                    <select id="days-filter" onchange="loadHistory()"
+                        class="bg-transparent text-sm text-white glass-card rounded-lg px-3 py-2 border border-white/10 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                        <option value="7" class="bg-[#1e293b] text-white">За последние 7 дней</option>
+                        <option value="14" class="bg-[#1e293b] text-white">За последние 14 дней</option>
+                        <option value="30" class="bg-[#1e293b] text-white">За последние 30 дней</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-xs uppercase tracking-wider text-gray-500 border-b border-white/5">
+                            <th class="px-6 py-4 font-medium">Дата</th>
+                            <th class="px-6 py-4 font-medium">Поставщик</th>
+                            <th class="px-6 py-4 font-medium">Ингредиент</th>
+                            <th class="px-6 py-4 font-medium text-right">Кол-во</th>
+                            <th class="px-6 py-4 font-medium text-right">Сумма</th>
+                            <th class="px-6 py-4 font-medium text-center">Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody">
+                        <tr>
+                            <td colspan="6" class="px-6 py-10 text-center text-gray-500">Загрузка...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-4 border-t border-white/5 text-sm text-gray-400 flex justify-between">
+                <div>Всего найдено: <span id="total-count" class="text-white font-medium">0</span></div>
+                <div>Суммарные затраты: <span id="total-sum" class="text-emerald-400 font-medium">0</span> ₽</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API = window.location.origin;
+
+        // ── Theme Toggle ──
+        function applyTheme() {
+            if (localStorage.getItem('theme') === 'light') {
+                document.body.classList.add('light-theme');
+                document.getElementById('theme-toggle').textContent = '☀️';
+            } else {
+                document.body.classList.remove('light-theme');
+                document.getElementById('theme-toggle').textContent = '🌙';
+            }
+        }
+        function toggleTheme() {
+            const isLight = document.body.classList.contains('light-theme');
+            localStorage.setItem('theme', isLight ? 'dark' : 'light');
+            applyTheme();
+        }
+        applyTheme();
+
+        function getStatusBadge(status) {
+            if (status.includes("Доставлен") && !status.includes("Доставляется")) {
+                return `<span class="px-2 py-1 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[10px] uppercase tracking-wider">✅ ${status}</span>`;
+            } else if (status.includes("Доставляется")) {
+                return `<span class="px-2 py-1 rounded border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 text-[10px] uppercase tracking-wider">🚚 ${status}</span>`;
+            }
+            return `<span class="px-2 py-1 rounded border border-amber-500/20 bg-amber-500/10 text-amber-400 text-[10px] uppercase tracking-wider">⏳ ${status}</span>`;
+        }
+
+        async function loadHistory() {
+            const days = document.getElementById("days-filter").value;
+            const tbody = document.getElementById("history-tbody");
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">Загрузка...</td></tr>';
+
+            try {
+                const resp = await fetch(`${API}/api/v1/orders/history?days=${days}`);
+                if (!resp.ok) throw new Error("API error");
+                const data = await resp.json();
+
+                if (!data.orders || data.orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">За этот период заказов нет.</td></tr>';
+                    document.getElementById("total-count").textContent = "0";
+                    document.getElementById("total-sum").textContent = "0";
+                    return;
+                }
+
+                let totalSum = 0;
+                tbody.innerHTML = data.orders.map((d, i) => {
+                    totalSum += d.total_cost;
+                    return `
+                    <tr class="table-row-hover border-b border-light-theme default fade-in-up" style="animation-delay: ${i * 0.03}s; border-color: rgba(0,0,0,0.05);">
+                        <td class="px-6 py-4 text-sm text-gray-300 font-medium">${d.date}</td>
+                        <td class="px-6 py-4 text-sm text-white">${d.supplier}</td>
+                        <td class="px-6 py-4 text-sm text-indigo-300">${d.ingredient}</td>
+                        <td class="px-6 py-4 text-sm text-right text-gray-300">${d.qty} <span class="text-xs text-gray-500">${d.unit}</span></td>
+                        <td class="px-6 py-4 text-sm text-emerald-400 font-medium text-right">${d.total_cost.toLocaleString('ru-RU')} ₽</td>
+                        <td class="px-6 py-4 text-center">${getStatusBadge(d.status)}</td>
+                    </tr>`;
+                }).join('');
+
+                document.getElementById("total-count").textContent = data.orders.length;
+                document.getElementById("total-sum").textContent = totalSum.toLocaleString('ru-RU');
+
+            } catch (e) {
+                console.error("Load failed", e);
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-red-500">Ошибка: ${e.message}</td></tr>`;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadHistory();
+        });
+    </script>
+</body>
+
+</html>

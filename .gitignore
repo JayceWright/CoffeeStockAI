@@ -19,6 +19,9 @@ env/
 # ML артефакты (большой бинарный файл — не нужен в репо)
 ml/forecast_plot.png
 
+# Данные (большой Excel файл — не нужен в репо, на сервере грузится через Data/)
+Data/
+
 # IDE
 .vscode/
 .idea/
@@ -26,4 +29,8 @@ ml/forecast_plot.png
 
 # OS
 .DS_Store
-Thumbs.db
+Thumbs.db
+
+# Временные скрипты
+dump_cols.py
+swap.py

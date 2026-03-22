@@ -6,6 +6,7 @@
     <title>CoffeeStock AI — Аналитика</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             theme: { extend: {
@@ -13,6 +14,28 @@
                 colors: { coffee: { 50:'#fdf8f0',100:'#f9edd8',200:'#f2d7a8',300:'#e8bb6e',400:'#df9d3e',500:'#d48325',600:'#b8651c',700:'#984b1a',800:'#7c3d1d',900:'#66331b' } }
             }}
         }
+
+        function applyTheme(theme) {
+            document.body.classList.remove('light-theme', 'dark-theme');
+            document.body.classList.add(theme);
+            localStorage.setItem('theme', theme);
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.innerHTML = theme === 'light-theme' ? '☀️' : '🌙';
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = localStorage.getItem('theme') || 'dark-theme';
+            const newTheme = currentTheme === 'dark-theme' ? 'light-theme' : 'dark-theme';
+            applyTheme(newTheme);
+        }
+
+        // Apply theme on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark-theme';
+            applyTheme(savedTheme);
+        });
     </script>
     <style>
         body { font-family: 'Inter', system-ui, sans-serif; }
@@ -38,6 +61,38 @@
         /* Table hover */
         .row-hover { transition: all 0.2s ease; }
         .row-hover:hover { background: rgba(255,255,255,0.04); }
+
+        /* Light Theme Overrides */
+        body.light-theme {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+        }
+        body.light-theme .glass {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+        body.light-theme .glass-card {
+            background: rgba(255, 255, 255, 0.5);
+            border-color: rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        body.light-theme .text-white { color: #0f172a; }
+        body.light-theme .text-gray-200 { color: #334155; }
+        body.light-theme .text-gray-300 { color: #475569; }
+        body.light-theme .text-gray-400 { color: #64748b; }
+        body.light-theme .text-gray-500 { color: #94a3b8; }
+        body.light-theme .bg-white\/5 { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.1); }
+        body.light-theme .border-white\/5 { border-color: rgba(0,0,0,0.08); }
+        body.light-theme .border-white\/10 { border-color: rgba(0,0,0,0.1); }
+        body.light-theme .table-row-hover:hover { background: rgba(0, 0, 0, 0.03); }
+        body.light-theme .border-b\.border-white\/3 { border-color: rgba(0,0,0,0.05); }
+        body.light-theme .text-indigo-300 { color: #4338ca; }
+        body.light-theme .text-amber-400 { color: #d97706; }
+        body.light-theme .text-emerald-400 { color: #059669; }
+        body.light-theme .text-red-400 { color: #dc2626; }
+        body.light-theme .text-amber-300 { color: #b45309; }
+        .solid-card { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); }
+        body.light-theme .solid-card { background: #ffffff; border-color: rgba(0,0,0,0.1); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); color: #0f172a; }
     </style>
 </head>
 <body class="bg-gradient-dark min-h-screen text-gray-200">
@@ -52,16 +107,24 @@
                             <span class="text-white text-lg">☕</span>
                         </div>
                         <div>
-                            <h1 class="text-lg font-bold text-white tracking-tight">CoffeeStock<span class="text-coffee-400"> AI</span></h1>
-                            <p class="text-[10px] text-gray-500 -mt-0.5 tracking-wider uppercase">Аналитика</p>
+                            <a href="/" class="block hover:opacity-80 transition">
+                                <h1 class="text-lg font-bold text-white tracking-tight">CoffeeStock<span class="text-coffee-400"> AI</span></h1>
+                                <p class="text-[10px] text-gray-500 -mt-0.5 tracking-wider uppercase">Аналитика</p>
+                            </a>
                         </div>
                     </div>
                     <div class="hidden sm:flex items-center gap-1 ml-4">
                         <a href="/" class="nav-link text-sm font-medium text-gray-400">📦 Склад</a>
                         <a href="/analytics.html" class="nav-link active text-sm font-medium text-coffee-400">📊 Аналитика</a>
+                        <a href="/history.html" class="nav-link text-sm font-medium text-gray-400">📜 История</a>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" onclick="toggleTheme()" class="p-2 rounded-full glass-card hover:bg-white/10 transition text-sm flex items-center justify-center w-9 h-9">
+                        🌙
+                    </button>
+
                     <div class="hidden sm:flex items-center gap-2 glass-card px-3 py-1.5 rounded-full">
                         <div class="w-2 h-2 bg-emerald-400 rounded-full pulse-dot"></div>
                         <span class="text-xs text-gray-400">Система активна</span>
@@ -111,7 +174,7 @@
                 <div class="mt-4 space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-400">Алгоритм</span>
-                        <span class="text-sm text-white font-semibold">Meta Prophet</span>
+                        <span class="text-sm text-white font-semibold">Prophet + CatBoost</span>
                     </div>
                     <div class="border-t border-white/5"></div>
                     <div class="flex justify-between items-center">
@@ -125,8 +188,8 @@
                     </div>
                     <div class="border-t border-white/5"></div>
                     <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-400">Train / Test</span>
-                        <span class="text-sm text-white">80% / 20%</span>
+                        <span class="text-sm text-gray-400">Valid</span>
+                        <span class="text-sm text-white">Rolling Window (n_splits=5)</span>
                     </div>
                     <div class="border-t border-white/5"></div>
                     <div class="flex justify-between items-center">
@@ -180,6 +243,32 @@
             </div>
         </div>
 
+        <!-- ═══════ ROW 2.5: PROPHET INTERACTIVE CHART ═══════ -->
+        <div class="glass rounded-2xl overflow-hidden fade-in-up delay-4 mb-8">
+            <div class="px-6 py-5 border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span class="w-2 h-2 bg-indigo-400 rounded-full"></span>
+                        Интерактивный прогноз (Hybrid Ensemble)
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Расчетные значения (yhat), сезонность и 95% доверительный интервал</p>
+                </div>
+                <div>
+                    <select id="prophet-ingredient" onchange="loadProphetChart()" class="bg-transparent text-sm text-white glass-card rounded-lg px-3 py-1.5 focus:outline-none border border-white/10 hover:border-indigo-500/40">
+                        <option value="Кофейные зёрна" class="text-gray-900">Кофейные зёрна</option>
+                        <option value="Молоко 3.2%" class="text-gray-900">Молоко 3.2%</option>
+                        <option value="Стаканчики 300мл" class="text-gray-900">Стаканчики 300мл</option>
+                        <option value="Сиропы (ассорти)" class="text-gray-900">Сиропы (ассорти)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="w-full h-80 relative">
+                    <canvas id="prophet-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
         <!-- ═══════ ROW 3: BOM + ANOMALY THRESHOLDS ═══════ -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
             <!-- BOM Coverage -->
@@ -229,31 +318,82 @@
                             <span class="w-3 h-3 bg-emerald-400 rounded-full"></span>
                             <span class="text-sm font-semibold text-white">Авто-отправка</span>
                         </div>
-                        <p class="text-xs text-gray-400 ml-6">Остаток ≥ <code class="text-emerald-300 bg-emerald-500/10 px-1 rounded">min_stock</code> И рекомендация ≤ <code class="text-emerald-300 bg-emerald-500/10 px-1 rounded">forecast × 2</code></p>
+                        <p class="text-xs text-gray-400 ml-6">Остаток ≥ <code class="text-emerald-300 bg-emerald-500/10 px-1 rounded">Мин. запас</code> И рекомендация ≤ <code class="text-emerald-300 bg-emerald-500/10 px-1 rounded">Прогноз × 2</code></p>
                     </div>
                     <div class="glass-card rounded-xl p-4">
                         <div class="flex items-center gap-3 mb-2">
                             <span class="w-3 h-3 bg-amber-400 rounded-full"></span>
                             <span class="text-sm font-semibold text-white">Утверждение менеджером</span>
                         </div>
-                        <p class="text-xs text-gray-400 ml-6">Остаток ниже <code class="text-amber-300 bg-amber-500/10 px-1 rounded">min_stock</code> → <span class="text-amber-400">критический уровень</span></p>
-                        <p class="text-xs text-gray-400 ml-6 mt-1">Рекомендация &gt; <code class="text-amber-300 bg-amber-500/10 px-1 rounded">forecast × 2</code> → <span class="text-amber-400">аномалия</span></p>
+                        <p class="text-xs text-gray-400 ml-6">Остаток ниже <code class="text-amber-300 bg-amber-500/10 px-1 rounded">Мин. запаса</code> → <span class="text-amber-400">критический уровень</span></p>
+                        <p class="text-xs text-gray-400 ml-6 mt-1">Рекомендация &gt; <code class="text-amber-300 bg-amber-500/10 px-1 rounded">Прогноз × 2</code> → <span class="text-amber-400">аномалия</span></p>
                     </div>
                     <div class="glass-card rounded-xl p-4">
                         <div class="flex items-center gap-3 mb-2">
                             <span class="w-3 h-3 bg-red-400 rounded-full pulse-dot"></span>
                             <span class="text-sm font-semibold text-white">Критический дефицит</span>
                         </div>
-                        <p class="text-xs text-gray-400 ml-6">Остаток &lt; <code class="text-red-300 bg-red-500/10 px-1 rounded">min_stock</code> + прогноз &gt; остаток × 2 → срочный заказ</p>
+                        <p class="text-xs text-gray-400 ml-6">Остаток &lt; <code class="text-red-300 bg-red-500/10 px-1 rounded">Мин. запас</code> + прогноз &gt; остаток × 2 → срочный заказ</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ═══════ ROW 4: TECH STACK ═══════ -->
-        <div class="glass-card rounded-2xl p-6 fade-in-up delay-5">
+        <!-- ═══════ AI TEST SECTION ═══════ -->
+        <div class="glass rounded-2xl overflow-hidden fade-in-up delay-5 mb-8">
+            <div class="px-6 py-5 border-b border-white/5 flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-white">🧠 Тест AI-объяснений (OpenRouter)</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Проверка LLM-рекомендаций с учётом погоды и праздников</p>
+                </div>
+                <span id="weather-badge" class="glass-card px-3 py-1.5 rounded-full text-xs text-indigo-300">⛅ загрузка...</span>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                    <div class="glass-card rounded-xl p-4">
+                        <label class="text-[11px] text-gray-500 uppercase tracking-wider block mb-1">Ингредиент</label>
+                        <input id="test-ingredient" type="text" value="Молоко 3.2%" class="w-full bg-transparent text-sm text-white focus:outline-none border-b border-white/10 pb-1"/>
+                    </div>
+                    <div class="glass-card rounded-xl p-4">
+                        <label class="text-[11px] text-gray-500 uppercase tracking-wider block mb-1">Остаток / Минимум</label>
+                        <div class="flex gap-2 items-center">
+                            <input id="test-stock" type="number" value="15" class="w-16 bg-transparent text-sm text-red-400 focus:outline-none border-b border-white/10 pb-1"/>
+                            <span class="text-gray-600">/</span>
+                            <input id="test-min" type="number" value="50" class="w-16 bg-transparent text-sm text-gray-400 focus:outline-none border-b border-white/10 pb-1"/>
+                            <span class="text-xs text-gray-500 ml-1">л</span>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4">
+                        <label class="text-[11px] text-gray-500 uppercase tracking-wider block mb-1">Прогноз / Рекомендация</label>
+                        <div class="flex gap-2 items-center">
+                            <input id="test-forecast" type="number" value="87" class="w-16 bg-transparent text-sm text-indigo-300 focus:outline-none border-b border-white/10 pb-1"/>
+                            <span class="text-gray-600">/</span>
+                            <input id="test-rec" type="number" value="125" class="w-16 bg-transparent text-sm text-amber-400 focus:outline-none border-b border-white/10 pb-1"/>
+                            <span class="text-xs text-gray-500 ml-1">л</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="text-[11px] text-gray-500 uppercase tracking-wider block mb-1">Причина аномалии</label>
+                    <input id="test-reason" type="text" value="Прогноз превышает запас × 2 — возможен повышенный спрос" class="w-full glass-card rounded-lg px-3 py-2 text-sm text-amber-300 focus:outline-none border border-white/5 focus:border-indigo-500/40"/>
+                </div>
+                <button onclick="testAI()" id="btn-test-ai" class="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2">
+                    <span>🧠</span> Спросить AI-объяснение (OpenRouter)
+                </button>
+                <div id="ai-test-result" class="hidden mt-5 glass-card rounded-xl p-5 border border-indigo-500/10">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs">✨</div>
+                        <span class="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Генерация ответа...</span>
+                    </div>
+                    <p id="ai-test-text" class="text-sm text-gray-200 leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tech Stack -->
+        <div class="glass-card rounded-2xl p-6 fade-in-up delay-5 mb-8">
             <span class="text-xs text-gray-500 uppercase tracking-wider font-medium mb-4 block">Технологический стек</span>
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
                 <div class="text-center py-3">
                     <div class="text-2xl mb-1">🐍</div>
                     <div class="text-xs text-white font-medium">Python</div>
@@ -285,13 +425,19 @@
                     <div class="text-[10px] text-gray-500">Deploy</div>
                 </div>
                 <div class="text-center py-3">
-                    <div class="text-2xl mb-1">🎨</div>
-                    <div class="text-xs text-white font-medium">Tailwind CSS</div>
-                    <div class="text-[10px] text-gray-500">CDN</div>
+                    <div class="text-2xl mb-1">🌡️</div>
+                    <div class="text-xs text-white font-medium">OpenWeather</div>
+                    <div class="text-[10px] text-gray-500">API</div>
+                </div>
+                <div class="text-center py-3">
+                    <div class="text-2xl mb-1">🧠</div>
+                    <div class="text-xs text-white font-medium">OpenRouter</div>
+                    <div class="text-[10px] text-gray-500">AI LLM</div>
                 </div>
             </div>
         </div>
     </main>
+
 
     <footer class="border-t border-white/5 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
@@ -302,6 +448,23 @@
 
     <script>
         const API = window.location.origin;
+
+        // ── Theme Toggle ──
+        function applyTheme() {
+            if (localStorage.getItem('theme') === 'light') {
+                document.body.classList.add('light-theme');
+                document.getElementById('theme-toggle').textContent = '☀️';
+            } else {
+                document.body.classList.remove('light-theme');
+                document.getElementById('theme-toggle').textContent = '🌙';
+            }
+        }
+        function toggleTheme() {
+            const isLight = document.body.classList.contains('light-theme');
+            localStorage.setItem('theme', isLight ? 'dark' : 'light');
+            applyTheme();
+        }
+        applyTheme();
 
         // ── MAPE Gauge ──
         function setGauge(mape) {
@@ -343,31 +506,49 @@
             }
         }
 
-        // ── Bar Chart (simple CSS) ──
+        // ── Bar Chart: нормализованный по каждому ингредиенту ──
         function renderBarChart() {
+            // Нормализуем каждый ингредиент отдельно (в % от прогноза)
+            // чтобы молоко в мл не давило чай в граммах
             const data = [
-                { name: "Стаканы",     fact: 487, forecast: 502 },
-                { name: "Молоко",      fact: 12350, forecast: 12800 },
-                { name: "Кофе зёрна",  fact: 2450, forecast: 2610 },
-                { name: "Какао",       fact: 680, forecast: 720 },
-                { name: "Чай",         fact: 185, forecast: 192 },
-                { name: "Выпечка",     fact: 78, forecast: 85 },
+                { name: "Стаканы",    unit: "шт",  fact: 487,   forecast: 502  },
+                { name: "Молоко",     unit: "л",   fact: 12350, forecast: 12800 },
+                { name: "Кофе",       unit: "г",   fact: 2450,  forecast: 2610 },
+                { name: "Какао",      unit: "г",   fact: 680,   forecast: 720  },
+                { name: "Чай",        unit: "г",   fact: 185,   forecast: 192  },
+                { name: "Выпечка",    unit: "шт",  fact: 78,    forecast: 85   },
             ];
-            const maxVal = Math.max(...data.flatMap(d => [d.fact, d.forecast]));
+
             const chart = document.getElementById("bar-chart");
             const labels = document.getElementById("bar-labels");
+            const MAX_H = 140;
 
-            chart.innerHTML = data.map((d, i) => {
-                const fH = Math.round((d.fact / maxVal) * 160);
-                const pH = Math.round((d.forecast / maxVal) * 160);
+            chart.innerHTML = data.map((d) => {
+                // нормализуем: макс из (факт, прогноз) = 100%
+                const localMax = Math.max(d.fact, d.forecast);
+                const fH = Math.round((d.fact / localMax) * MAX_H);
+                const pH = Math.round((d.forecast / localMax) * MAX_H);
+                const accuracy = Math.round((d.fact / d.forecast) * 100);
+                const diffColor = accuracy >= 95 ? '#10b981' : accuracy >= 85 ? '#f59e0b' : '#ef4444';
                 return `
-                    <div class="flex-1 flex items-end gap-1 justify-center">
-                        <div class="w-5 bg-indigo-500/60 rounded-t bar-animate" style="height: 0px; opacity: 0" data-h="${fH}" title="Факт: ${d.fact.toLocaleString()}"></div>
-                        <div class="w-5 bg-coffee-400 rounded-t bar-animate" style="height: 0px; opacity: 0" data-h="${pH}" title="Прогноз: ${d.forecast.toLocaleString()}"></div>
+                    <div class="flex-1 flex flex-col items-center gap-1">
+                        <span class="text-[11px] font-semibold" style="color: ${diffColor}">${accuracy}%</span>
+                        <div class="flex items-end gap-1" style="height: ${MAX_H}px">
+                            <div class="w-5 bg-indigo-500/60 rounded-t bar-animate cursor-pointer" 
+                                 style="height: 0px; opacity: 0" data-h="${fH}" 
+                                 title="Факт: ${d.fact.toLocaleString()} ${d.unit}"></div>
+                            <div class="w-5 bg-coffee-400 rounded-t bar-animate cursor-pointer" 
+                                 style="height: 0px; opacity: 0" data-h="${pH}" 
+                                 title="Прогноз: ${d.forecast.toLocaleString()} ${d.unit}"></div>
+                        </div>
                     </div>`;
             }).join("");
 
-            labels.innerHTML = data.map(d => `<div class="flex-1 text-center text-[10px] text-gray-500 truncate">${d.name}</div>`).join("");
+            labels.innerHTML = data.map(d => `
+                <div class="flex-1 text-center">
+                    <div class="text-[10px] text-gray-400 truncate">${d.name}</div>
+                    <div class="text-[9px] text-gray-600">${d.unit}</div>
+                </div>`).join("");
 
             // Animate bars
             setTimeout(() => {
@@ -378,11 +559,141 @@
             }, 300);
         }
 
+        // ── Test AI (OpenRouter) ──
+        async function testAI() {
+            const btn = document.getElementById('btn-test-ai');
+            const result = document.getElementById('ai-test-result');
+            const text = document.getElementById('ai-test-text');
+            btn.innerHTML = '⏳ AI думает...';
+            btn.disabled = true;
+            result.classList.add('hidden');
+            try {
+                const resp = await fetch(`${API}/api/v1/ai/explain`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ingredient: document.getElementById('test-ingredient').value,
+                        current_stock: parseFloat(document.getElementById('test-stock').value),
+                        min_stock: parseFloat(document.getElementById('test-min').value),
+                        forecast_qty: parseFloat(document.getElementById('test-forecast').value),
+                        recommended_qty: parseFloat(document.getElementById('test-rec').value),
+                        anomaly_reason: document.getElementById('test-reason').value,
+                        unit: 'л',
+                    }),
+                });
+                const data = await resp.json();
+                text.textContent = data.explanation;
+                result.classList.remove('hidden');
+            } catch (e) {
+                text.textContent = '⚠️ Ошибка: ' + e.message;
+                result.classList.remove('hidden');
+            }
+            btn.innerHTML = '🧠 Спросить AI-объяснение (OpenRouter)';
+            btn.disabled = false;
+        }
+
+        // ── Weather Badge ──
+        async function loadWeatherBadge() {
+            try {
+                const resp = await fetch(`${API}/api/v1/weather`);
+                if (!resp.ok) throw new Error();
+                const w = await resp.json();
+                const badge = document.getElementById('weather-badge');
+                if (badge) {
+                    const t = w.today?.temp;
+                    const desc = w.today?.description || '';
+                    const icon = parseFloat(t) > 25 ? '☀️' : parseFloat(t) > 10 ? '⛅' : '❄️';
+                    badge.textContent = `${icon} ${Math.round(t)}°C, ${desc}`;
+                    if (w.upcoming_holidays?.length) {
+                        badge.title = w.upcoming_holidays.join('\n');
+                    }
+                }
+            } catch { /* silent */ }
+        }
+
+        // ── Prophet Chart.js ──
+        let prophetChartInst = null;
+        async function loadProphetChart() {
+            const ing = document.getElementById('prophet-ingredient').value;
+            try {
+                const resp = await fetch(`${API}/api/v1/forecast/data?ingredient=${encodeURIComponent(ing)}`);
+                if (!resp.ok) throw new Error("API error");
+                const res = await resp.json();
+                
+                const labels = res.data.map(d => d.ds);
+                const facts = res.data.map(d => d.y_fact);
+                const forecasts = res.data.map(d => d.yhat);
+
+                const isLight = document.body.classList.contains('light-theme');
+                const textColor = isLight ? '#1e293b' : '#ffffff'; // Чисто белый цвет для темной темы
+                const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+
+                if (prophetChartInst) prophetChartInst.destroy();
+                const ctx = document.getElementById('prophet-chart').getContext('2d');
+                prophetChartInst = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Факт',
+                                data: facts,
+                                borderColor: '#3B82F6',
+                                backgroundColor: '#3B82F6',
+                                tension: 0.3,
+                                pointRadius: 2,
+                                borderWidth: 2,
+                                borderDash: [2, 2]
+                            },
+                            {
+                                label: 'Расчетные значения (yhat)',
+                                data: forecasts,
+                                borderColor: '#F97316',
+                                backgroundColor: 'transparent',
+                                tension: 0.3,
+                                pointRadius: 3,
+                                borderWidth: 3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { labels: { color: textColor } },
+                            tooltip: { 
+                                backgroundColor: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(15,23,42,0.9)',
+                                titleColor: isLight ? '#0f172a' : '#fff',
+                                bodyColor: isLight ? '#334155' : '#cbd5e1',
+                                borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                                borderWidth: 1
+                            }
+                        },
+                        scales: {
+                            x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                            y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
+                        }
+                    }
+                });
+
+            } catch(e) { console.error('Prophet load failed:', e); }
+        }
+
+        // ── Theme Re-render for Chart ──
+        const origToggleTheme = toggleTheme;
+        toggleTheme = function() {
+            origToggleTheme();
+            if (prophetChartInst) loadProphetChart();
+        };
+
         // ── Init ──
         document.addEventListener("DOMContentLoaded", () => {
-            setGauge(5.8); // MAPE from actual run
+            setGauge(11.3);
             loadFeedback();
             renderBarChart();
+            loadProphetChart();
+            loadWeatherBadge();
         });
     </script>
 </body>
