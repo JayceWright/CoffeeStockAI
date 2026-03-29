@@ -31,6 +31,14 @@ Data/
 .DS_Store
 Thumbs.db
 
+# Презентации и временные файлы Office
+*.pptx
+~$*
+
+# Логи
+*.log
+
 # Временные скрипты
 dump_cols.py
 swap.py
+copy_screenshots.py
